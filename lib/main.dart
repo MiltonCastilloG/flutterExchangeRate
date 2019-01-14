@@ -7,13 +7,12 @@ import 'package:http/http.dart' as http;
 void main() => runApp(MyApp());
 
 
-Future<Post> fetchPost() async {
+Future<Post> fetchPost(String convertionFromTo) async {
   final response =
       await http.get('https://free.currencyconverterapi.com/api/v6/convert?q=USD_EUR&compact=y');
-
   if (response.statusCode == 200) {
     // If server returns an OK response, parse the JSON
-    return Post.fromJson(json.decode(response.body));
+    return Post.fromJson(json.decode(response.body), convertionFromTo);
   } else {
     // If that response was not OK, throw an error.
     throw Exception('Failed to load post');
@@ -25,9 +24,9 @@ class Post {
 
   Post({this.cRate});
 
-  factory Post.fromJson(Map<String, dynamic> json) {
+  factory Post.fromJson(Map<String, dynamic> json, String convertionFromTo) {
     return Post(
-      cRate: json['USD_EUR']["val"],
+      cRate: json[convertionFromTo]["val"],
     );
   }
 }
@@ -39,7 +38,10 @@ class ConvertedMoney extends StatefulWidget {
 
 class _ConvertedMoney extends State<ConvertedMoney> {
   double i = 1;
-  TextEditingController textController = TextEditingController(); 
+  String convertionFrom = "USD";
+  String convertionTo = "EUR";
+  TextEditingController textController = TextEditingController();
+
   void convertMoney() {
     setState(() {
       i = double.tryParse(textController.text);
@@ -60,12 +62,32 @@ class _ConvertedMoney extends State<ConvertedMoney> {
       children: [
          Container(
           padding: const EdgeInsets.only(top: 10.0),
-          child: Text(
+          child: /*Text(
             'USD',
             style: TextStyle(
               fontWeight: FontWeight.bold
-            ),
-          ),
+            ),*/
+            PopupMenuButton<String>(
+  onSelected: (String result) { setState(() { convertionFrom = result; }); },
+  itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+    const PopupMenuItem<String>(
+      value: "USD",
+      child: Text('Working a lot harder'),
+    ),
+    const PopupMenuItem<String>(
+      value: "EUR",
+      child: Text('Being a lot smarter'),
+    ),
+    const PopupMenuItem<String>(
+      value: "PHP",
+      child: Text('Being a self-starter'),
+    ),
+    const PopupMenuItem<String>(
+      value: "LIB",
+      child: Text('Placed in charge of trading charter'),
+    ),
+  ],
+)
         ),
         TextField(
           decoration: new InputDecoration.collapsed(
@@ -84,7 +106,7 @@ class _ConvertedMoney extends State<ConvertedMoney> {
         ),
         Container(
           child: FutureBuilder<Post>(
-            future: fetchPost(),
+            future: fetchPost(convertionFrom + "_" + convertionTo),
             builder: (context, snapshot) {
               if (snapshot.hasData) {
                 double rate = snapshot.data.cRate;
